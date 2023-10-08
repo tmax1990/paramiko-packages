@@ -5,3 +5,5 @@ git config --global user.name "thoaxe"
 git config --global user.email "thoaxe@sykehuspartner.no"
 
 git config --unset user.name
+
+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

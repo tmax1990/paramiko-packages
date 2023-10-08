@@ -1,0 +1,85 @@
+Backup/restore av XMC. 
+
+1. først lag en backup via OneView. 
+Administration -> Backup/restore
+Filename: skriv noe fornuftig med dato. xiqse-2023-09-08-sd3-xmc-02-22.9.11.14
+Trykk Backup 
+
+sudo cd /xmc/Extreme_Networks/NetSight/backup/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+
+2. via CLI så må det endres på permissions. 
+sudo chmod -R 755 /xmc/Extreme_Networks/NetSight/backup/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+
+# husk å ta med skripts overrides de ligger i en zip fil her:
+sudo cp -R /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides/ /xmc/Extreme_Networks/NetSight/backup/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+
+# husk å ta med My FlexViews, de ligger her:
+sudo cp -R /xmc/Extreme_Networks/NetSight/appdata/System/FlexViews/My\ FlexViews/ /xmc/Extreme_Networks/NetSight/backup/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+
+3. kopier filene til ny XMC-server. det kan være nødvendig å endre rettighetene etterpå
+
+du kan kjøre denne kommandoen for å hente backup fra annen xmc. 
+scp -r admthoaxe@10.183.0.38:/xmc/Extreme_Networks/NetSight/backup/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14 /xmc/temp/
+
+sudo chmod -R 755 /xmc/temp/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+sudo chown -R netsight:root /xmc/temp/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+
+4. Kjør restore via CLI
+cd /xmc/Extreme_Networks/NetSight/scripts
+sudo ./mysqlbackup_restore.sh /xmc/temp/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/
+
+5. Husk at Radiuspålogging aktiveres ved å legge over til produksjon. 
+Dermed må ny xmc-server legges inn der. Network devices. 
+
+6. scripts må også legges inn. fra for eks. /xmc/temp, legg skriptene med overrides her
+# hvis det er filer her fra før.
+rm -rf /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides/*
+sudo cp -r /xmc/temp/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/overrides/. /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides/
+sudo chown -R netsight:root /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides
+sudo chmod -R 755 /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides
+
+7. Samme må gjøres for My Flexviews 
+sudo cp -r /xmc/temp/xiqse-2023-09-08-sd3-xmc-02-22.9.11.14/My\ FlexViews/ /xmc/Extreme_Networks/NetSight/appdata/System/FlexViews/
+sudo chown -R netsight:root /xmc/Extreme_Networks/NetSight/appdata/System/FlexViews/My\ FlexViews/
+sudo chmod -R 755 /xmc/Extreme_Networks/NetSight/appdata/System/FlexViews/My\ FlexViews/
+# liten notat: det må være nok diskplass for å kjøre egne flexviews. se at home folder ikke inneholder store filer. 
+
+# restart xmc service
+sudo service nsserver restart
+
+8. Git må installeres, for å gi tilgang til extentitions. se egen veiledning for dette. 
+
+9. Husk config.js fil
+sudo cp config.json /opt/config.json
+
+# TING Å HUSKE PÅ VED FAILOVER TIL ANNEN XMC
+1. Enable rediscover devices i tasks. 
+2. Endre ip på dns-record extremecontrol 
+3. ip på tftp-server
+4. husk å legge til verdier i NSJBoss. /xmc/Extreme_Networks/NetSight/appdata/NSJBoss.properties
+com.trilead.ssh2.channel.Channel.bufferSize=50000
+com.trilead.ssh2.channel.Channel.localMaxPacketSize=55000
+
+10. copy over workflow-files - NB change the ip of XMC:
+first delete the folder: 
+rm -rf /xmc/temp/workflow-output/
+scp -r admthoaxe@10.183.0.38:/xmc/temp/workflow-output /xmc/temp/workflow-output
+
+then change the rights. 
+find /xmc/temp/workflow-output -type d -exec chmod 755 {} \;
+find /xmc/temp/workflow-output -type f -exec chmod 644 {} \;
+
+chown -R netsight:root /xmc/temp/workflow-output
+
+11. change the workflow Alias
+vim /etc/httpd/conf.d/webapp.conf
+
+On primary:
+ServerName sd3-xmc.sikt.sykehuspartner.no
+ServerAlias sd3-xmc
+
+On second:
+ServerName sd3-xmc-02.sikt.sykehuspartner.no
+ServerAlias sd3-xmc-02
+
+systemctl restart httpd

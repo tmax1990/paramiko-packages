@@ -1,0 +1,184 @@
+2022-09-27: Ny måte å installere det på. Med bash-script
+#lag .sh filene. eller kopier dem via WinSCP. 
+vim xmc-delete-vg01-xmc-fase1.sh            # lim inn innhold
+vim xmc-delete-vg01-xmc-fase2.sh            # lim inn innhold
+vim xmc-delete-vg01-xmc-fase3.sh            # lim inn innhold
+
+chmod +x ./xmc-delete-vg01-xmc-fase1.sh
+chmod +x ./xmc-delete-vg01-xmc-fase2.sh
+chmod +x ./xmc-delete-vg01-xmc-fase3.sh
+
+# 
+sudo su
+
+# Kjør fase 1 først, krever boot. 
+yes | ./xmc-delete-vg01-xmc-fase1.sh
+
+# Hvis du får feilmelding om bad directory, så kjør dette:
+sed -i -e 's/\r$//' xmc-delete-vg01-xmc-fase1.sh
+sed -i -e 's/\r$//' xmc-delete-vg01-xmc-fase2.sh
+sed -i -e 's/\r$//' xmc-delete-vg01-xmc-fase3.sh
+
+# sjekk om SELINUX er disablet
+sudo /usr/sbin/sestatus
+
+# 
+sudo su
+
+# Kjør fase 2
+# OBS! hvis det skal gjøres en reinstallasjon av XIQ, og partitisjon allerede finnes, så kan man unmounte /xmc ved å kommentere ut følgende i /etc/fstab
+# "/dev/mapper/vg01-xmc    /xmc                    xfs     defaults        0 0"
+# så gjør en reboot av server:
+# reboot
+#
+# hvis ny server kan du fortsette med bash-script:
+
+
+yes | ./xmc-delete-vg01-xmc-fase2.sh
+
+# Kopier installasjonsfilene til /xmc/temp      # kan være ExtremeCloudIQSiteEngine_22.9.11.14_64bit_install.bin
+
+# Endre rettigheter på installasjonsfil
+chmod 777 /xmc/temp/ExtremeCloudIQSiteEngine_22.9.11.14_64bit_install.bin
+chown root:root /xmc/temp/ExtremeCloudIQSiteEngine_22.9.11.14_64bit_install.bin
+
+# Kjør Installasjon. 
+# ved å sette passord så blir det opprettet en lokalbruker automatisk: netsight
+/xmc/temp/ExtremeCloudIQSiteEngine_22.9.11.14_64bit_install.bin --cli --extract /xmc/temp --password Au2ma10Q
+
+#skriv ok når dette kommer
+# The selected folder does not exist.
+# Would you like to create it?   ok | cancel     Default: ok
+ok
+
+# Kjør fase 3, ikke ta med Yes. Trykk enter når det kommer prompt. 
+./xmc-delete-vg01-xmc-fase3.sh
+
+# Først må du kopiere SSH-nøkkel inn i GitLab. 
+https://gitlab.sikt.sykehuspartner.no
+
+# Koble til repository
+git clone git@gitlab.sikt.sykehuspartner.no:ADMTHOAXE/extreme-management-center-dev.git /xmc/Extreme_Networks/NetSight/appdata/scripting/extensions/
+
+# Husk at config.json fil må kopieres over til /opt/config.json
+
+# I versjon 22.9.11.14 finnes det en feil, som gjør at det oppstår session-timeout i skript. 
+# Under må legges til i /xmc/Extreme_Networks/NetSight/appdata/NSJBoss.properties
+
+vim /xmc/Extreme_Networks/NetSight/appdata/NSJBoss.properties
+com.trilead.ssh2.channel.Channel.bufferSize=50000
+com.trilead.ssh2.channel.Channel.localMaxPacketSize=55000
+
+service nsserver restart
+
+
+
+
+
+
+
+
+
+
+
+
+Installere XMC, NY
+# sjekk harddisk partisjon, må ha en drive som heter xmc
+df -h
+
+# hvis drive ikke eksisterer: 
+lsblk
+pvcreate /dev/sdb
+vgcreate /dev/sdb vg01
+vgcreate vg01 /dev/sdb
+lvcreate  -l 100%free -n xmc vg01
+mkfs.xfs /dev/vg01/xmc
+vi /etc/fsta
+vi /etc/fstab
+mkdir /xmc
+mount /xmc
+
+# sjekk om selinux er enabled/disabled
+sudo /usr/sbin/sestatus
+
+# åpne opp denne
+sudo vim /etc/selinux/config
+
+# endre til 
+SELINUX=disabled
+
+# restart server
+reboot
+
+# må være en ny direcory i xmc-mappe
+mkdir /xmc/Extreme_Networks
+chmod 777 /xmc/Extreme_Networks/
+ln -s /xmc/Extreme_Networks /usr/local/Extreme_Networks
+
+# videre installasjon 
+yum install unzip
+yum install htop
+
+mkdir /xmc/temp/
+chmod 777 /xmc/temp/
+mkdir /xmc/temp/iparp
+chmod 777 /xmc/temp/iparp
+chown root:root /xmc/temp/iparp
+mkdir /xmc/temp/iparp/temporary
+chmod 777 /xmc/temp/iparp/temporary
+chown root:root /xmc/temp/iparp/temporary
+mkdir /tftpboot/configs
+mkdir /tftpboot/configs/tmp
+chmod 777 /tftpboot/configs
+chmod 777 /tftpboot/configs/tmp
+
+
+chmod 777 /xmc/temp/ExtremeManagementCenter_Suite_8.5.6.17_64bit_install.bin
+chown root:root /xmc/temp/ExtremeManagementCenter_Suite_8.5.6.17_64bit_install.bin
+
+# ved å sette passord så blir det opprettet en lokalbruker automatisk: netsight
+./ExtremeManagementCenter_Suite_8.5.6.17_64bit_install.bin --cli --extract /xmc/temp --password Au2ma10Q
+
+
+NB! Skal du gjøre om på harddisk så gjør følgende:
+1. vi /etc/fstab # slett linjen som inneholder path til LVM i /etc/fstab
+/dev/mapper/vg01-xmc    /xmc                    xfs     defaults        0 0
+
+2. reboot # da skal ikke path bli mounted, sjekk df -h
+for å sjekke LVM: fdisk -l
+
+3. lvchange -an /dev/mapper/vg01-xmc # for å suspendere LVM.
+4. lvremove /dev/mapper/vg01-xmc # fjerne LVM
+5. vgdisplay # hvis vg01 eksisterer trenger du ikke å opprette denne. 
+6. cat /proc/partitions # kommando for å se partisjon.
+7. lvcreate  -l 100%free -n xmc vg01
+8. mkfs.xfs /dev/vg01/xmc
+9. blkid # for å se uid-nr
+10. vi /etc/fstab # legg inn følgende nedenfor.
+/dev/mapper/vg01-xmc    /xmc                    xfs     defaults        0 0
+11. mount /xmc # må finnes en directory som heter /xmc
+
+# Utvide plass på root disk
+vgdisplay
+sudo lvextend -L +10G /dev/vg00/root
+sudo xfs_growfs /dev/mapper/vg00-root
+
+NYE pakker for 8.5.7
+yum install -y libXext.x86_64
+yum install -y libXrender.x86_64
+yum install -y libXtst.x86_64
+
+#resterende pakker for å få det til å virke. 
+yum install -y libXpm.x86_64
+yum install -y libXft.x86_64
+yum install -y libXdamage.x86_64
+yum install -y libXcursor.x86_64
+
+# Ikke prøv disse med det første. 
+yum install xorg-x11-apps (for xclock)
+yum install xorg-x11-xauth
+yum install xorg-x11-server-Xorg
+
+
+
+./ExtremeManagementCenter_Suite_8.5.7.28_64bit_install.bin --cli --extract /xmc/temp --password Au2ma10Q

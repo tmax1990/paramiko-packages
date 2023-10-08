@@ -1,0 +1,169 @@
+# installere Git
+sudo yum install git
+
+#sette verdier for å se hvem som pusher konfigurasjon
+sudo git config --global user.name "Thomas Axelsson (Admin)"
+sudo git config --global user.email "admthoaxe@sikt.sykehuspartner.no"
+
+# skru av SSL
+sudo git config --global http.sslverify false
+
+# for å se konfigurasjon
+sudo git config --list
+
+# Lage SSH-nøkkel
+sudo ssh-keygen -o -t rsa -b 4096 -C "thoaxe@sykehuspartner.com" (ikke ta med dette på linux redhat: $HOME/.ssh/mykey/id_rsa)
+
+# kopierer public key
+sudo cp /root/.ssh/id_rsa.pub ~/id_rsa.pub
+
+# først legg inn nøkkel i GitLab, så gjør dette for å teste:
+sudo ssh -T git@gitlab.sikt.sykehuspartner.no
+
+# for hjelp
+sudo git help config
+sudo git config -help
+
+# for å begynne tracking
+sudo git init
+
+# hvis vi vil slutte tracking så fjerner man .git mappe.
+sudo rm -rf .git
+
+sudo vim newfile.txt
+
+# det gir informasjon om filene som skal trackes.
+git status
+
+# Ignorere filer:
+sudo touch .gitignore
+# innhold i fil, kan bruke wildcard *
+.DS_Store
+.project
+*.pcy
+
+# add one file:
+sudo git add newfile.txt
+
+# add all files:
+sudo git add -A
+
+# fjerne fil fra staging:
+sudo git reset newfile.txt
+
+# fjerne alle filer fra staging:
+sudo git reset
+
+# commit filene i staging
+sudo git commit -m "First commit"
+
+# Log
+sudo git log
+
+# tilkobler til remote repository, med kun filene (.) på slutten. 
+sudo git clone git@gitlab.sikt.sykehuspartner.no:ADMTHOAXE/extreme-management-center-dev.git .
+
+# List information about the remote repository
+sudo git remote -v
+
+# List branch
+sudo git branch -a
+
+# Vise endringer som man har gjort på kode
+sudo git diff
+
+# før man pusher endringer så er det lurt å ta en pull, i tilfelle det er flere som jobber på samme prosjekt. 
+sudo git pull origin master
+
+# push
+sudo git push origin master
+
+sudo git remote add origin git@gitlab.sikt.sykehuspartner.no:ADMTHOAXE/webapp2.git
+
+
+
+
+
+
+
+git@gitlab.sikt.sykehuspartner.no:ADMTHOAXE/myproject-test.git
+
+
+# For å clone prosjektet fra GitLab. 
+sudo git clone git@gitlab.sikt.sykehuspartner.no:ADMTHOAXE/myproject-test.git
+
+
+
+
+
+
+
+
+ 1 file changed, 1 insertion(+)
+ create mode 100644 newfile.txt
+[admthoaxe@sds-xmc-02 myproject]$ sudo git config --global user.name "Thomas Axelsson (Admin)"
+[admthoaxe@sds-xmc-02 myproject]$ sudo git config --global user.email "admthoaxe@sikt.sykehuspartner.no"
+[admthoaxe@sds-xmc-02 myproject]$ sudo git remote add origin https://gitlab.sikt.sykehuspartner.no/ADMTHOAXE/myproject-test.git
+[admthoaxe@sds-xmc-02 myproject]$ 
+[admthoaxe@sds-xmc-02 myproject]$ 
+[admthoaxe@sds-xmc-02 myproject]$ sudo git push -u origin master
+fatal: unable to access 'https://gitlab.sikt.sykehuspartner.no/ADMTHOAXE/myproject-test.git/': Certificate key usage inadequate for attempted operation.
+[admthoaxe@sds-xmc-02 myproject]$ sudo ssh-keygen -o -t rsa -b 4096 -C "thoaxe@sykehuspartner.com"
+Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /root/.ssh/id_rsa.
+Your public key has been saved in /root/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:yXDg3o+rMi87fADeoXOFMpGO840E9ni1Xca1LR75wII thoaxe@sykehuspartner.com
+The key's randomart image is:
++---[RSA 4096]----+
+|   .  . . ..     |
+|..o  o ..+. +    |
+|.+o...=E+. B .   |
+|o.*ooo.* .o =    |
+| =.O o. S  . .   |
+|  * =    o       |
+|   + .  . .      |
+|    * .  .       |
+|    .Oo..        |
++----[SHA256]-----+
+[admthoaxe@sds-xmc-02 myproject]$ cp /root/.ssh/id_rsa.pub id_rsa.pub
+cp: cannot stat â€˜/root/.ssh/id_rsa.pubâ€™: Permission denied
+[admthoaxe@sds-xmc-02 myproject]$ sudo cp /root/.ssh/id_rsa.pub id_rsa.pub
+[admthoaxe@sds-xmc-02 myproject]$ ls
+id_rsa.pub  newfile.txt
+[admthoaxe@sds-xmc-02 myproject]$ ssh -T gitlab.sikt.sykehuspartner.no
+The authenticity of host 'gitlab.sikt.sykehuspartner.no (10.184.20.84)' can't be established.
+ECDSA key fingerprint is SHA256:DGfdV6aiztpnQP4EmQxNPqTuuRpD+HkpnzQiGmD/Shk.
+ECDSA key fingerprint is MD5:f1:09:93:d0:e9:5f:5f:92:93:50:0a:6d:4e:92:c6:51.
+Are you sure you want to continue connecting (yes/no)? y
+Please type 'yes' or 'no': yes
+Warning: Permanently added 'gitlab.sikt.sykehuspartner.no,10.184.20.84' (ECDSA) to the list of known hosts.
+Permission denied (publickey).
+[admthoaxe@sds-xmc-02 myproject]$ sudo ssh -T gitlab.sikt.sykehuspartner.no
+[sudo] password for admthoaxe: 
+The authenticity of host 'gitlab.sikt.sykehuspartner.no (10.184.20.84)' can't be established.
+ECDSA key fingerprint is SHA256:DGfdV6aiztpnQP4EmQxNPqTuuRpD+HkpnzQiGmD/Shk.
+ECDSA key fingerprint is MD5:f1:09:93:d0:e9:5f:5f:92:93:50:0a:6d:4e:92:c6:51.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'gitlab.sikt.sykehuspartner.no,10.184.20.84' (ECDSA) to the list of known hosts.
+Permission denied (publickey).
+[admthoaxe@sds-xmc-02 myproject]$ sudo ssh -T gitlab.sikt.sykehuspartner.no@gitlab.com
+
+exit
+quit
+^C
+[admthoaxe@sds-xmc-02 myproject]$ 
+[admthoaxe@sds-xmc-02 myproject]$ 
+[admthoaxe@sds-xmc-02 myproject]$ sudo git push -u origin master
+fatal: unable to access 'https://gitlab.sikt.sykehuspartner.no/ADMTHOAXE/myproject-test.git/': Certificate key usage inadequate for attempted operation.
+[admthoaxe@sds-xmc-02 myproject]$ sudo ssh -T ssh -T git@gitlab.sikt.sykehuspartner.no
+ssh: Could not resolve hostname ssh: Name or service not known
+[admthoaxe@sds-xmc-02 myproject]$ sudo  ssh -T git@gitlab.sikt.sykehuspartner.no
+Enter passphrase for key '/root/.ssh/id_rsa': 
+Welcome to GitLab, @ADMTHOAXE!
+[admthoaxe@sds-xmc-02 myproject]$ 
+[admthoaxe@sds-xmc-02 myproject]$ 
+[admthoaxe@sds-xmc-02 myproject]$ 

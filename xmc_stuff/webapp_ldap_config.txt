@@ -1,0 +1,183 @@
+LDAP Config:
+
+#choose 1 or 2
+#1. get files from another xmc
+scp admthoaxe@10.183.0.38:/etc/pki/tls/certs/sds-xmc-02_NY.cer /etc/pki/tls/certs/
+scp admthoaxe@10.183.0.38:/etc/pki/tls/certs/hso_intermediate.crt /etc/pki/tls/certs/
+scp admthoaxe@10.183.0.38:/etc/pki/tls/private/sds-xmc-02_NY.key /etc/pki/tls/private/
+
+#2.create certificate files
+touch /etc/pki/tls/certs/sds-xmc-02_NY.cer
+touch /etc/pki/tls/private/sds-xmc-02_NY.key
+touch /etc/pki/tls/certs/hso_intermediate.crt
+
+#you have to paste in the content of the certificates. 
+echo "-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----" >> /etc/pki/tls/certs/sds-xmc-02_NY.cer
+
+echo "-----BEGIN PRIVATE KEY-----
+-----END PRIVATE KEY-----" >> /etc/pki/tls/private/sds-xmc-02_NY.key
+
+
+echo "-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----" >> /etc/pki/tls/certs/hso_intermediate.crt
+
+
+yum install httpd
+yum install mod_ldap
+yum install mod_ssl
+
+# start/restart httpd
+systemctl status httpd
+systemctl restart httpd
+
+#to start httpd at startup:
+systemctl enable httpd
+
+FLYTTET TIL APACHE 2.4. MAL ER FRA CONFGEN. 
+touch /etc/httpd/conf.d/webapp.conf
+vim /etc/httpd/conf.d/webapp.conf
+
+# Husk å endre <xmc-server>
+# Innhold:
+echo '<VirtualHost *:80>
+        ServerName sds-xmc-02.sikt.sykehuspartner.no
+        ServerAdmin nettverk@sykehuspartner.no
+    CustomLog /var/log/httpd/webapp_access.log combined
+    ErrorLog /var/log/httpd/webapp_error.log
+        Redirect permanent / https://sds-xmc-02
+</VirtualHost>
+
+<VirtualHost _default_:443>
+
+LimitRequestFieldSize 65536
+SSLEngine on
+SSLCertificateFile      /etc/pki/tls/certs/sds-xmc-02_NY.cer
+SSLCertificateKeyFile   /etc/pki/tls/private/sds-xmc-02_NY.key
+SSLCertificateChainFile      /etc/pki/tls/certs/hso_intermediate.crt
+SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP
+
+DocumentRoot "/var/www/html"
+ServerAdmin nettverk@sykehuspartner.no
+ServerName sd3-xmc-03.sikt.sykehuspartner.no
+ServerAlias sd3-xmc-03
+CustomLog /var/log/httpd/webapp_access.log combined
+ErrorLog /var/log/httpd/webapp_error.log
+
+Alias /workflow-output /xmc/temp/workflow-output/
+<Directory /xmc/temp/workflow-output/>
+        Require all granted
+        Options Indexes FollowSymLinks
+</Directory>
+
+<Location /webapp>
+ProxyPreserveHost On
+ProxyPass "http://127.0.0.1:8001/"
+ProxyPassReverse "http://127.0.0.1:8001/"
+</Location>
+
+<Location />
+#ProxyPreserveHost On
+#ProxyPass "http://127.0.0.1:8001/"
+#ProxyPassReverse "http://127.0.0.1:8001/"
+AuthType Basic
+AuthName "Domain Credentials Required"
+AuthUserFile /dev/null
+AuthBasicProvider ldap
+
+AuthLDAPURL "ldaps://sds-dc-01.sikt.sykehuspartner.no:636/OU=Adminbrukere,OU=Delegering,DC=sikt,DC=sykehuspartner,DC=no?sAMAccountName,displayName,givenName,sn?sub"
+# Service Account you make in AD to bind to the directory with.
+
+AuthLDAPBindDN "SvcAccXMC@sikt.sykehuspartner.no"
+# AuthLDAPBindDN "CN=guestportal,OU=Servicekontoer,DC=sikt,DC=sykehuspartner,DC=no"
+AuthLDAPBindPassword "Vti$P%g2N88CE1WE"
+
+AuthLDAPGroupAttribute member
+AuthLDAPGroupAttributeIsDN off
+# THEY MUST BE A MEMBER OF THIS GROUP IN AD!
+#Require ldap-attribute memberOf="CN=Delegation Infrastruktur Kommunikasjon,OU=Nettverk,OU=Grupper,DC=sikt,DC=sykehuspartner,DC=no"
+Require ldap-filter |(memberOf=CN=Delegation Infrastruktur Kommunikasjon,OU=Nettverk,OU=Grupper,DC=sikt,DC=sykehuspartner,DC=no)(memberOf=CN=Appl Nettverk XMC Prod Admin,OU=Nettverk,OU=Grupper,DC=sikt,DC=sykehuspartner,DC=no)
+
+
+allow from all
+</Location>
+
+</VirtualHost>
+LDAPVerifyServerCert          off' >> /etc/httpd/conf.d/webapp.conf
+
+
+
+
+
+
+
+
+<VirtualHost *:80>
+        ServerName sds-xmc-02.sikt.sykehuspartner.no
+        ServerAdmin nettverk@sykehuspartner.no
+    CustomLog /var/log/httpd/webapp_access.log combined
+    ErrorLog /var/log/httpd/webapp_error.log
+        Redirect permanent / https://sds-xmc-02
+</VirtualHost>
+
+<VirtualHost _default_:443>
+
+LimitRequestFieldSize 65536
+SSLEngine on
+SSLCertificateFile      /etc/pki/tls/certs/sds-xmc-02_NY.cer
+SSLCertificateKeyFile   /etc/pki/tls/private/sds-xmc-02_NY.key
+SSLCertificateChainFile      /etc/pki/tls/certs/hso_intermediate.crt
+SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP
+
+DocumentRoot "/var/www/html"
+ServerAdmin nettverk@sykehuspartner.no
+ServerName <xmc-server>.sikt.sykehuspartner.no
+ServerAlias <xmc-server>
+CustomLog /var/log/httpd/webapp_access.log combined
+ErrorLog /var/log/httpd/webapp_error.log
+
+Alias /workflow-output /xmc/temp/workflow-output/
+<Directory /xmc/temp/workflow-output/>
+        Require all granted
+        Options Indexes FollowSymLinks
+</Directory>
+
+<Location /webapp>
+ProxyPreserveHost On
+ProxyPass "http://127.0.0.1:8001/"
+ProxyPassReverse "http://127.0.0.1:8001/"
+</Location>
+
+<Location />
+#ProxyPreserveHost On
+#ProxyPass "http://127.0.0.1:8001/"
+#ProxyPassReverse "http://127.0.0.1:8001/"
+AuthType Basic
+AuthName "Domain Credentials Required"
+AuthUserFile /dev/null
+AuthBasicProvider ldap
+
+AuthLDAPURL "ldaps://sds-dc-01.sikt.sykehuspartner.no:636/OU=Adminbrukere,OU=Delegering,DC=sikt,DC=sykehuspartner,DC=no?sAMAccountName,displayName,givenName,sn?sub"
+# Service Account you make in AD to bind to the directory with.
+
+AuthLDAPBindDN "SvcAccXMC@sikt.sykehuspartner.no"
+# AuthLDAPBindDN "CN=guestportal,OU=Servicekontoer,DC=sikt,DC=sykehuspartner,DC=no"
+AuthLDAPBindPassword "Vti$P%g2N88CE1WE"
+
+AuthLDAPGroupAttribute member
+AuthLDAPGroupAttributeIsDN off
+# THEY MUST BE A MEMBER OF THIS GROUP IN AD!
+#Require ldap-attribute memberOf="CN=Delegation Infrastruktur Kommunikasjon,OU=Nettverk,OU=Grupper,DC=sikt,DC=sykehuspartner,DC=no"
+Require ldap-filter |(memberOf=CN=Delegation Infrastruktur Kommunikasjon,OU=Nettverk,OU=Grupper,DC=sikt,DC=sykehuspartner,DC=no)(memberOf=CN=Appl Nettverk XMC Prod Admin,OU=Nettverk,OU=Grupper,DC=sikt,DC=sykehuspartner,DC=no)
+
+
+allow from all
+</Location>
+
+</VirtualHost>
+LDAPVerifyServerCert          off
+
+
+
+
+

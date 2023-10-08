@@ -1,0 +1,49 @@
+#
+# Hurtig guide for endring av fil med Git.
+#
+
+# tilkobler til remote repository, med kun filene (.) på slutten. 
+sudo git clone git@gitlab.sikt.sykehuspartner.no:ADMTHOAXE/extreme-management-center-dev.git .
+
+# med ftp
+sudo git clone ftp://xmc:J@?82iroSJGWVo1V@sds-netmgmt-01/development/.git .
+
+
+# add all files:
+sudo git add -A
+
+# commit filene i staging
+sudo git commit -m "First commit"
+
+# før man pusher endringer så er det lurt å ta en pull, i tilfelle det er flere som jobber på samme prosjekt. 
+sudo git pull origin master
+sudo git pull origin main
+
+# push
+sudo git push origin master
+
+
+# endre passord på ssh-key
+sudo ssh-keygen -p -f /root/.ssh/id_rsa 
+
+
+#XIQ path for GIT.
+cd /xmc/Extreme_Networks/NetSight/appdata/scripting/extensions
+
+
+
+rm -rf /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides/*
+sudo cp -r /xmc/Extreme_Networks/NetSight/appdata/scripting/extensions/overrides/. /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides/
+sudo chown -R netsight:root /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides
+sudo chmod -R 755 /xmc/Extreme_Networks/NetSight/appdata/scripting/overrides
+sudo service nsserver restart
+
+
+# Nyere kommandoer...
+
+# Se hvilken branch du jobber i 
+git branch
+
+# Endre branch. 
+git checkout ise3.1
+

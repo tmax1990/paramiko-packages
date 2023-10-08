@@ -1,0 +1,7 @@
+git config --global user.name "tmax1990"
+git config --global user.email "tmax.tmax1990@gmail.com"
+
+git config --global user.name "thoaxe"
+git config --global user.email "thoaxe@sykehuspartner.no"
+
+git config --unset user.name

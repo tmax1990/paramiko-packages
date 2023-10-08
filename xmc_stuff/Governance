@@ -1,0 +1,110 @@
+# installer nødvendige pakker
+sudo yum -y install gcc
+sudo yum -y install make
+sudo yum -y install zlib-devel
+sudo yum -y install virtualenv
+sudo yum -y install mysql-devel
+sudo yum -y install python2-devel
+sudo yum -y install libxslt-devel libffi-devel
+
+# viktig at du er din bruker, + lag en tmp mappe på hjemmeområde
+su - admthoaxe
+mkdir ~/tmp
+
+# kopier filene til ~/tmp
+# gjøres i WinSCP
+Python-2.7.15.tgz
+mysql-python.tar.gz
+pygtail-0.12.0.tar.gz
+my_config.h
+
+# pakk ut filene
+tar zxvf ~/tmp/Python-2.7.15.tgz -C ~/tmp/
+tar zxvf ~/tmp/mysql-python.tar.gz -C ~/tmp/
+tar zxvf ~/tmp/pygtail-0.12.0.tar.gz -C ~/tmp/
+
+
+
+
+
+# OBS! Trenger ikke å gjøre dette for bruker/netsight... må installers på ROOT
+# kjør kommandene
+cd ~/tmp/Python-2.7.15/
+./configure --prefix=$HOME/opt/python-2.7.15 --with-ensurepip=install
+make
+make install
+
+# legg til i PATH
+export PATH=$HOME/opt/python-2.7.15/bin:$PATH
+
+# for å få det parmanent på bruker. 
+sudo vim /usr/local/Extreme_Networks/NetSight/home/.bash_profile
+sudo vim ~/.bash_profile
+# Setting PATH for Python 2.7
+PATH="/home/admthoaxe/opt/python-2.7.15/bin:${PATH}"
+export PATH
+
+# Setting PATH for Python 2.7 for netsight
+PATH="/usr/local/Extreme_Networks/NetSight/home/opt/python-2.7.15/bin:${PATH}"
+export PATH
+
+# For å installere mysql-python må det lages en fil
+
+# kopier fil til mysql
+sudo cp ~/tmp/my_config.h /usr/include/mysql/my_config.h
+
+# lag virtuelt env.
+cd ~
+virtualenv -p /home/admthoaxe/opt/python-2.7.15/bin/python governance-venv --never-download
+
+# aktiver venv
+source governance-venv/bin/activate
+
+# for å se hvilken python versjon
+which python
+
+# for å se hvilke pakker som er installert
+pip list
+
+# installer
+cd ~/tmp/mysql-python/
+python setup.py install
+cd ~/tmp/pygtail-0.12.0
+python setup.py install
+# OBS! Trenger ikke å gjøre dette for bruker... må installers på ROOT
+
+
+
+
+# kjør import
+sudo chmod 777 /xmc/Extreme_Networks/NetSight/GovernanceEngine/governance-engine.py
+cd /xmc/Extreme_Networks/NetSight/GovernanceEngine
+./governance-engine.py --db-import-all-tests --governance-type PCI
+./governance-engine.py --db-import-all-tests --governance-type HIPAA 
+
+# Må installere pakkene på ROOT, ellers så fungerer det ikke
+# PS. så finnes disse pakkene her /xmc/Extreme_Networks/NetSight/GovernanceEngine/modules
+sudo su
+pip2 list
+cd ~/tmp/mysql-python/
+python2 setup.py install
+cd ~/tmp/pygtail-0.12.0
+python setup.py install
+
+# Må også kjøre et Inventory skript for å få opprettet et GIT repository
+chmod 777 InventoryMgr-to-git.py
+./InventoryMgr-to-git.py
+
+# Må endre rettighetene. 
+chown -R netsight:root /xmc/Extreme_Networks/NetSight/git
+
+#Må huske å lime inn lisens 
+ --> Administration --> license --> Add license
+# lisens nøkkel finner du i Extreme Portalen: 
+voucher-id: 1214-18G6-C2G6-C2J9-B1G6
+
+#trenger kanskje ikke dette men. 
+#stop og start server
+cd /xmc/Extreme_Networks/NetSight/scripts
+service nsserver stop
+service nsserver start
